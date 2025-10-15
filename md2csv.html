@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table Multi-format Editor & Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: white;
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin: 0;
+            color: #333;
+        }
+
+        .header-buttons {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .header-btn {
+            background: #d4e8f7;
+            color: #333;
+            border: 1px solid #b8d4e8;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 80px;
+        }
+
+        .header-btn:hover {
+            background: #c0dff0;
+            border-color: #a0c8e0;
+        }
+
+        .header-btn:active {
+            background: #b0d5ea;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            height: calc(100vh - 140px);
+            grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
+        }
+
+        /* Collapsible Card Component */
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            grid-row: auto;
+        }
+
+        .card:hover {
+            box-shadow: 2px 2px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-header {
+            padding: 3px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            background-color: #f5f5f5;
+        }
+
+        .card-header:hover {
+            background-color: #e8e8e8;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            border: none;
+            background: none;
+        }
+
+        .icon-btn:hover {
+            opacity: 1;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .card-body {
+            padding: 0;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-body.collapsed {
+            flex: 0;
+            min-height: 0;
+            max-height: 0;
+            padding: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .card.collapsed {
+            min-height: auto;
+            height: auto;
+        }
+
+        /* Content Areas */
+        .preview-container {
+            background: #f9f9f9;
+            padding: 20px;
+            overflow: auto;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        .preview-table th {
+            background: #d4e8f7;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .preview-table tr {
+            background: white;
+        }
+
+        .preview-table tr:hover {
+            background: #f0f0f0;
+        }
+
+        .markdown-input {
+            width: 100%;
+            padding: 20px;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            transition: border-color 0.3s;
+            background: white;
+            display: none;
+            outline: none;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .markdown-input:focus {
+            outline: none;
+            border-color: #555;
+        }
+
+        .markdown-input.editing {
+            display: block;
+        }
+
+        /* Placeholder text styling */
+        .markdown-input::placeholder,
+        .csv-input::placeholder,
+        .json-input::placeholder,
+        .html-input::placeholder {
+            color: #999;
+            opacity: 1;
+        }
+
+        .markdown-display {
+            width: 100%;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            background: #f9f9f9;
+            white-space: pre-wrap;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        .markdown-display:hover {
+            background-color: #f8f9fa;
+        }
+
+        .markdown-display.editing {
+            display: none;
+        }
+
+        .csv-output {
+            background: #f9f9f9;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow: auto;
+            white-space: pre;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .csv-output:hover {
+            background-color: #e8e8e8;
+        }
+
+        .csv-input {
+            width: 100%;
+            padding: 20px;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            background: white;
+            display: none;
+            outline: none;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .csv-input.editing {
+            display: block;
+        }
+
+        .csv-output.editing {
+            display: none;
+        }
+
+        .json-output {
+            background: #f9f9f9;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow: auto;
+            white-space: pre;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .json-output:hover {
+            background-color: #e8e8e8;
+        }
+
+        .json-input {
+            width: 100%;
+            padding: 20px;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            background: white;
+            display: none;
+            outline: none;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .json-input.editing {
+            display: block;
+        }
+
+        .json-output.editing {
+            display: none;
+        }
+
+        .html-output {
+            background: #f9f9f9;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow: auto;
+            white-space: pre;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .html-output:hover {
+            background-color: #e8e8e8;
+        }
+
+        .html-input {
+            width: 100%;
+            padding: 20px;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            background: white;
+            display: none;
+            outline: none;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .html-input.editing {
+            display: block;
+        }
+
+        .html-output.editing {
+            display: none;
+        }
+
+        .placeholder {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            margin: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-content h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .modal-content p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .modal-content ul {
+            margin-bottom: 15px;
+            padding-left: 20px;
+        }
+
+        .modal-content li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .modal-content code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .copy-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            pointer-events: none;
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+
+        .copy-indicator.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                text-align: center;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .header-buttons {
+                position: static;
+                flex-direction: row;
+                justify-content: center;
+                margin-top: 15px;
+            }
+            
+            body {
+                padding: 15px;
+            }
+
+            .card-header {
+                padding: 2px 15px;
+            }
+
+            .card-body {
+                padding: 0;
+            }
+            
+            .content {
+                height: calc(100vh - 120px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Table Multi-format Editor & Converter</h1>
+        <div class="header-buttons">
+            <button class="header-btn" id="clear-btn">Clear</button>
+            <button class="header-btn" id="help-btn">Help</button>
+        </div>
+    </div>
+    
+    <div class="content">
+        <!-- Preview Card -->
+        <div class="card">
+            <div class="card-header" data-target="preview-body">
+                <div class="card-title">
+                    Preview
+                    <button class="icon-btn" id="copy-preview" title="Copy preview content">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-actions">
+                    <button class="icon-btn toggle-icon" title="Toggle preview section">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" id="preview-body">
+                <div class="preview-container" id="table-preview">
+                    <div class="placeholder">Your table will appear here...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Markdown Input Card -->
+        <div class="card">
+            <div class="card-header" data-target="markdown-body">
+                <div class="card-title">
+                    Markdown
+                    <button class="icon-btn" id="copy-markdown" title="Copy markdown content">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-actions">
+                    <button class="icon-btn toggle-icon" title="Toggle markdown section">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" id="markdown-body">
+                <div class="markdown-display" id="markdown-display">
+                    <div class="placeholder">Click to edit markdown...</div>
+                </div>
+                <textarea class="markdown-input" id="markdown-input" placeholder="Paste or type your markdown table here...
+
+Example:
+| Name | Age | City |
+|------|-----|------|
+| John | 25  | NYC  |
+| Jane | 30  | LA   |"></textarea>
+            </div>
+        </div>
+
+        <!-- CSV Output Card -->
+        <div class="card">
+            <div class="card-header" data-target="csv-body">
+                <div class="card-title">
+                    CSV
+                    <button class="icon-btn" id="copy-csv" title="Copy CSV content">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-actions">
+                    <button class="icon-btn toggle-icon" title="Toggle CSV section">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" id="csv-body">
+                <div class="csv-output" id="csv-output">
+                    <div class="placeholder">Click to edit CSV...</div>
+                </div>
+                <textarea class="csv-input" id="csv-input" placeholder="Paste or type your CSV content here...
+
+Example:
+Name,Age,City
+John,25,NYC
+Jane,30,LA"></textarea>
+            </div>
+        </div>
+
+        <!-- JSON Output Card -->
+        <div class="card">
+            <div class="card-header" data-target="json-body">
+                <div class="card-title">
+                    JSON (lossless array of arrays)
+                    <button class="icon-btn" id="copy-json" title="Copy JSON content">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-actions">
+                    <button class="icon-btn toggle-icon" title="Toggle JSON section">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" id="json-body">
+                <div class="json-output" id="json-output">
+                    <div class="placeholder">Click to edit JSON...</div>
+                </div>
+                <textarea class="json-input" id="json-input" placeholder="Paste or type your JSON content here...
+
+Example:
+[
+  {
+    &quot;Name&quot;: &quot;John&quot;,
+    &quot;Age&quot;: 25,
+    &quot;City&quot;: &quot;NYC&quot;
+  },
+  {
+    &quot;Name&quot;: &quot;Jane&quot;,
+    &quot;Age&quot;: 30,
+    &quot;City&quot;: &quot;LA&quot;
+  }
+]"></textarea>
+            </div>
+        </div>
+
+        <!-- HTML Output Card -->
+        <div class="card">
+            <div class="card-header" data-target="html-body">
+                <div class="card-title">
+                    HTML
+                    <button class="icon-btn" id="copy-html" title="Copy HTML content">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-actions">
+                    <button class="icon-btn toggle-icon" title="Toggle HTML section">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" id="html-body">
+                <div class="html-output" id="html-output">
+                    <div class="placeholder">Click to edit HTML...</div>
+                </div>
+                <textarea class="html-input" id="html-input" placeholder="Paste or type your HTML content here...
+
+Example:
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Name&lt;/th&gt;
+      &lt;th&gt;Age&lt;/th&gt;
+      &lt;th&gt;City&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;John&lt;/td&gt;
+      &lt;td&gt;25&lt;/td&gt;
+      &lt;td&gt;NYC&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Jane&lt;/td&gt;
+      &lt;td&gt;30&lt;/td&gt;
+      &lt;td&gt;LA&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;"></textarea>
+            </div>
+        </div>
+    </div>
+    
+    <div class="copy-indicator" id="copy-indicator">✓ Copied to Clipboard!</div>
+    
+    <div class="modal-overlay" id="help-modal">
+        <div class="modal-content">
+            <h2>How to Use Table Multi-format Editor & Converter</h2>
+            
+            <h3>What This Tool Does</h3>
+            <p>Multi-format Editor & Converter creates and converts tables between different formats: Markdown, CSV, JSON, and HTML. Tables can be input, edited, or exported in any format, and all formats update in real time.</p>
+            
+            <h3>Getting Started</h3>
+            <p>Click any section to edit directly in that format. All other formats will update automatically, and you can switch between them at any time.</p>
+            
+            <h3>Quick Examples</h3>
+            <p><strong>CSV:</strong> <code>Name,Age,City<br>John,25,NYC<br>Jane,30,LA</code></p>
+            <p><strong>Markdown:</strong> <code>| Name | Age | City |<br>|------|-----|------|<br>| John | 25  | NYC  |</code></p>
+            <p><strong>JSON:</strong> <code>[["Name","Age","City"],["John","25","NYC"]]</code></p>
+            
+            <h3>How to Use Each Section</h3>
+            <ul>
+                <li><strong>Preview:</strong> Preview the rendered table</li>
+                <li><strong>Markdown:</strong> Format used in ChatGPT and Github</li>
+                <li><strong>CSV:</strong> Comma-separated values for spreadsheet import/export</li>
+                <li><strong>JSON:</strong> Format used in Restful APIs. (JSON objects not used because they are not 100% compatable with all data)</li>
+                <li><strong>HTML:</strong> Code for tables used in web pages</li>
+            </ul>
+            
+            <h3>Basic Actions</h3>
+            <ul>
+                <li><strong>Edit:</strong> Click any section to edit in that format</li>
+                <li><strong>Clear:</strong> Use the Clear button to delete the table and start over</li>
+                <li><strong>Copy Icon:</strong> Copies the table in that format to be pasted elsewhere</li>
+                <li><strong>Expand/Collapse:</strong> Click section headers to show/hide sections</li>
+            </ul>
+            
+            <p style="margin-top: 20px; text-align: center; color: #999; font-size: 0.9em;">Click anywhere outside this dialog to close</p>
+        </div>
+    </div>
+
+    <script>
+        const markdownInput = document.getElementById('markdown-input');
+        const markdownDisplay = document.getElementById('markdown-display');
+        const tablePreview = document.getElementById('table-preview');
+        const csvOutput = document.getElementById('csv-output');
+        const csvInput = document.getElementById('csv-input');
+        const jsonOutput = document.getElementById('json-output');
+        const jsonInput = document.getElementById('json-input');
+        const htmlOutput = document.getElementById('html-output');
+        const htmlInput = document.getElementById('html-input');
+        const copyIndicator = document.getElementById('copy-indicator');
+
+        // Parse markdown table from text
+        function parseMarkdownTable(markdown) {
+            const lines = markdown.split('\n').filter(line => line.trim());
+            const tableLines = [];
+            
+            // Find lines that look like table rows (contain |)
+            for (const line of lines) {
+                if (line.includes('|')) {
+                    tableLines.push(line);
+                }
+            }
+            
+            if (tableLines.length < 2) {
+                return null;
+            }
+            
+            // Parse rows
+            const rows = [];
+            let separatorIndex = -1;
+            
+            for (let i = 0; i < tableLines.length; i++) {
+                const line = tableLines[i].trim();
+                
+                // Check if this is a separator line (contains only |, -, :, and spaces)
+                if (/^[\s|:-]+$/.test(line) && line.includes('-')) {
+                    separatorIndex = i;
+                    continue;
+                }
+                
+                // Parse cells
+                const cells = line
+                    .split('|')
+                    .map(cell => cell.trim())
+                    .filter((cell, index, arr) => {
+                        // Remove empty first/last cells from lines like "| cell1 | cell2 |"
+                        return !(index === 0 && cell === '') && !(index === arr.length - 1 && cell === '');
+                    });
+                
+                if (cells.length > 0) {
+                    rows.push(cells);
+                }
+            }
+            
+            return rows.length > 0 ? rows : null;
+        }
+
+        // Convert parsed table to HTML
+        function tableToHTML(rows) {
+            if (!rows || rows.length === 0) {
+                return '<div class="placeholder">Your table will appear here...</div>';
+            }
+            
+            let html = '<table class="preview-table">';
+            
+            // First row is header
+            html += '<thead><tr>';
+            for (const cell of rows[0]) {
+                html += `<th>${escapeHtml(cell)}</th>`;
+            }
+            html += '</tr></thead>';
+            
+            // Remaining rows are body
+            if (rows.length > 1) {
+                html += '<tbody>';
+                for (let i = 1; i < rows.length; i++) {
+                    html += '<tr>';
+                    for (const cell of rows[i]) {
+                        html += `<td>${escapeHtml(cell)}</td>`;
+                    }
+                    html += '</tr>';
+                }
+                html += '</tbody>';
+            }
+            
+            html += '</table>';
+            return html;
+        }
+
+        // Convert parsed table to CSV
+        function tableToCSV(rows) {
+            if (!rows || rows.length === 0) {
+                return '';
+            }
+            
+            const csvLines = rows.map(row => {
+                return row.map(cell => {
+                    // Escape CSV cells that contain commas, quotes, or newlines
+                    if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
+                        return `"${cell.replace(/"/g, '""')}"`;
+                    }
+                    return cell;
+                }).join(',');
+            });
+            
+            return csvLines.join('\n');
+        }
+
+        // Parse CSV to markdown table
+        function parseCSV(csv) {
+            if (!csv || csv.trim() === '') {
+                return null;
+            }
+            
+            const lines = csv.split('\n').filter(line => line.trim());
+            const rows = [];
+            
+            for (const line of lines) {
+                const cells = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    
+                    if (char === '"') {
+                        if (inQuotes && line[i + 1] === '"') {
+                            current += '"';
+                            i++; // Skip next quote
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === ',' && !inQuotes) {
+                        cells.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                cells.push(current);
+                rows.push(cells);
+            }
+            
+            return rows.length > 0 ? rows : null;
+        }
+
+        // Convert CSV rows to markdown table
+        function csvToMarkdown(rows) {
+            if (!rows || rows.length === 0) {
+                return '';
+            }
+            
+            let markdown = '';
+            
+            // Header row
+            markdown += '| ' + rows[0].join(' | ') + ' |\n';
+            
+            // Separator row
+            markdown += '|' + rows[0].map(() => ' --- ').join('|') + '|\n';
+            
+            // Data rows
+            for (let i = 1; i < rows.length; i++) {
+                markdown += '| ' + rows[i].join(' | ') + ' |\n';
+            }
+            
+            return markdown;
+        }
+
+        // Convert table rows to JSON
+        function tableToJSON(rows) {
+            if (!rows || rows.length === 0) {
+                return '';
+            }
+            
+            // Convert all rows to array of arrays
+            return JSON.stringify(rows, null, 2);
+        }
+
+        // Parse JSON to table rows
+        function parseJSON(json) {
+            if (!json || json.trim() === '') {
+                return null;
+            }
+            
+            try {
+                const data = JSON.parse(json);
+                
+                // Check if it's an array of arrays
+                if (!Array.isArray(data) || data.length === 0) {
+                    return null;
+                }
+                
+                // Validate that all elements are arrays
+                for (const row of data) {
+                    if (!Array.isArray(row)) {
+                        return null;
+                    }
+                }
+                
+                return data;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Convert table rows to HTML
+        function tableToHTMLString(rows) {
+            if (!rows || rows.length === 0) {
+                return '';
+            }
+            
+            let html = '<table>';
+            
+            // First row is header
+            html += '<thead><tr>';
+            for (const cell of rows[0]) {
+                html += `<th>${escapeHtml(cell)}</th>`;
+            }
+            html += '</tr></thead>';
+            
+            // Remaining rows are body
+            if (rows.length > 1) {
+                html += '<tbody>';
+                for (let i = 1; i < rows.length; i++) {
+                    html += '<tr>';
+                    for (const cell of rows[i]) {
+                        html += `<td>${escapeHtml(cell)}</td>`;
+                    }
+                    html += '</tr>';
+                }
+                html += '</tbody>';
+            }
+            
+            html += '</table>';
+            return html;
+        }
+
+        // Parse HTML to table rows
+        function parseHTML(html) {
+            if (!html || html.trim() === '') {
+                return null;
+            }
+            
+            try {
+                // Create a temporary div to parse HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html.trim();
+                
+                const table = tempDiv.querySelector('table');
+                if (!table) {
+                    return null;
+                }
+                
+                const rows = [];
+                
+                // Get header row
+                const headerRow = table.querySelector('thead tr');
+                if (headerRow) {
+                    const headerCells = headerRow.querySelectorAll('th');
+                    const headers = Array.from(headerCells).map(cell => cell.textContent.trim());
+                    rows.push(headers);
+                }
+                
+                // Get data rows
+                const bodyRows = table.querySelectorAll('tbody tr');
+                for (const row of bodyRows) {
+                    const cells = row.querySelectorAll('td');
+                    const rowData = Array.from(cells).map(cell => cell.textContent.trim());
+                    rows.push(rowData);
+                }
+                
+                return rows.length > 0 ? rows : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Escape HTML entities
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Update preview and all outputs
+        function updateOutput() {
+            const markdown = markdownInput.value;
+            const parsedTable = parseMarkdownTable(markdown);
+            
+            // Update HTML preview
+            tablePreview.innerHTML = tableToHTML(parsedTable);
+            
+            // Update CSV output
+            const csv = tableToCSV(parsedTable);
+            csvOutput.innerHTML = csv || '<div class="placeholder">Click to edit CSV...</div>';
+            csvOutput.dataset.csv = csv;
+            
+            // Update JSON output
+            const json = tableToJSON(parsedTable);
+            jsonOutput.innerHTML = json || '<div class="placeholder">Click to edit JSON...</div>';
+            jsonOutput.dataset.json = json;
+            
+            // Update HTML output
+            const html = tableToHTMLString(parsedTable);
+            updateHTMLDisplay(html);
+            
+            // Update markdown display
+            markdownDisplay.innerHTML = markdown || '<div class="placeholder">Click to edit markdown...</div>';
+        }
+
+        // Update from CSV input
+        function updateFromCSV() {
+            const csv = csvInput.value;
+            const parsedTable = parseCSV(csv);
+            
+            if (parsedTable) {
+                // Update HTML preview
+                tablePreview.innerHTML = tableToHTML(parsedTable);
+                
+                // Update markdown
+                const markdown = csvToMarkdown(parsedTable);
+                markdownInput.value = markdown;
+                markdownDisplay.innerHTML = markdown;
+                
+                // Update JSON
+                const json = tableToJSON(parsedTable);
+                jsonOutput.innerHTML = json || '<div class="placeholder">Click to edit JSON...</div>';
+                jsonOutput.dataset.json = json;
+                
+                // Update HTML
+                const html = tableToHTMLString(parsedTable);
+                updateHTMLDisplay(html);
+                
+                // Store raw CSV for copying
+                csvOutput.dataset.csv = csv;
+            } else {
+                // Clear everything if no valid CSV
+                tablePreview.innerHTML = '<div class="placeholder">Your table will appear here...</div>';
+                markdownInput.value = '';
+                markdownDisplay.innerHTML = '<div class="placeholder">Click to edit markdown...</div>';
+                csvOutput.dataset.csv = '';
+                jsonOutput.innerHTML = '<div class="placeholder">Click to edit JSON...</div>';
+                jsonOutput.dataset.json = '';
+                updateHTMLDisplay('');
+            }
+        }
+
+        // Update from JSON input
+        function updateFromJSON() {
+            const json = jsonInput.value;
+            const parsedTable = parseJSON(json);
+            
+            if (parsedTable) {
+                // Update HTML preview
+                tablePreview.innerHTML = tableToHTML(parsedTable);
+                
+                // Update markdown
+                const markdown = csvToMarkdown(parsedTable);
+                markdownInput.value = markdown;
+                markdownDisplay.innerHTML = markdown;
+                
+                // Update CSV
+                const csv = tableToCSV(parsedTable);
+                csvOutput.innerHTML = csv || '<div class="placeholder">Click to edit CSV...</div>';
+                csvOutput.dataset.csv = csv;
+                
+                // Update HTML
+                const html = tableToHTMLString(parsedTable);
+                updateHTMLDisplay(html);
+                
+                // Store raw JSON for copying
+                jsonOutput.dataset.json = json;
+            } else {
+                // Clear everything if no valid JSON
+                tablePreview.innerHTML = '<div class="placeholder">Your table will appear here...</div>';
+                markdownInput.value = '';
+                markdownDisplay.innerHTML = '<div class="placeholder">Click to edit markdown...</div>';
+                jsonOutput.dataset.json = '';
+                csvOutput.innerHTML = '<div class="placeholder">Click to edit CSV...</div>';
+                csvOutput.dataset.csv = '';
+                updateHTMLDisplay('');
+            }
+        }
+
+        // Update from HTML input
+        function updateFromHTML() {
+            const html = htmlInput.value;
+            const parsedTable = parseHTML(html);
+            
+            if (parsedTable) {
+                // Update HTML preview
+                tablePreview.innerHTML = tableToHTML(parsedTable);
+                
+                // Update markdown
+                const markdown = csvToMarkdown(parsedTable);
+                markdownInput.value = markdown;
+                markdownDisplay.innerHTML = markdown;
+                
+                // Update CSV
+                const csv = tableToCSV(parsedTable);
+                csvOutput.innerHTML = csv || '<div class="placeholder">Click to edit CSV...</div>';
+                csvOutput.dataset.csv = csv;
+                
+                // Update JSON
+                const json = tableToJSON(parsedTable);
+                jsonOutput.innerHTML = json || '<div class="placeholder">Click to edit JSON...</div>';
+                jsonOutput.dataset.json = json;
+                
+                // Store raw HTML for copying
+                htmlOutput.dataset.html = html;
+            } else {
+                // Clear everything if no valid HTML
+                tablePreview.innerHTML = '<div class="placeholder">Your table will appear here...</div>';
+                markdownInput.value = '';
+                markdownDisplay.innerHTML = '<div class="placeholder">Click to edit markdown...</div>';
+                htmlOutput.dataset.html = '';
+                csvOutput.innerHTML = '<div class="placeholder">Click to edit CSV...</div>';
+                csvOutput.dataset.csv = '';
+                jsonOutput.innerHTML = '<div class="placeholder">Click to edit JSON...</div>';
+                jsonOutput.dataset.json = '';
+            }
+        }
+
+        // Copy to clipboard
+        async function copyToClipboard(text) {
+            if (!text) {
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(text);
+                showCopyIndicator();
+            } catch (err) {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showCopyIndicator();
+            }
+        }
+
+        // Copy preview content
+        function copyPreviewContent() {
+            const table = tablePreview.querySelector('table');
+            if (!table) return;
+            
+            // Convert table to text format
+            let text = '';
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('th, td');
+                const cellTexts = Array.from(cells).map(cell => cell.textContent.trim());
+                text += cellTexts.join('\t') + '\n';
+            });
+            copyToClipboard(text.trim());
+        }
+
+        // Copy markdown content
+        function copyMarkdownContent() {
+            copyToClipboard(markdownInput.value);
+        }
+
+        // Toggle markdown editing
+        function toggleMarkdownEditing() {
+            const isEditing = markdownInput.classList.contains('editing');
+            
+            if (isEditing) {
+                // Stop editing
+                markdownInput.classList.remove('editing');
+                markdownDisplay.classList.remove('editing');
+                markdownInput.blur();
+                // Show actual content, not placeholder
+                const content = markdownInput.value;
+                markdownDisplay.innerHTML = content || '<div class="placeholder">Click to edit markdown...</div>';
+            } else {
+                // Start editing
+                markdownInput.classList.add('editing');
+                markdownDisplay.classList.add('editing');
+                // Focus without scrolling
+                markdownInput.focus({ preventScroll: true });
+            }
+        }
+
+        // Toggle CSV editing
+        function toggleCSVEditing() {
+            const isEditing = csvInput.classList.contains('editing');
+            
+            if (isEditing) {
+                // Stop editing
+                csvInput.classList.remove('editing');
+                csvOutput.classList.remove('editing');
+                csvInput.blur();
+                // Show actual content, not placeholder
+                const content = csvOutput.dataset.csv || '';
+                csvOutput.innerHTML = content || '<div class="placeholder">Click to edit CSV...</div>';
+            } else {
+                // Start editing - populate CSV input with current CSV content
+                const currentCSV = csvOutput.dataset.csv || '';
+                csvInput.value = currentCSV;
+                csvInput.classList.add('editing');
+                csvOutput.classList.add('editing');
+                // Focus without scrolling
+                csvInput.focus({ preventScroll: true });
+            }
+        }
+
+        // Toggle JSON editing
+        function toggleJSONEditing() {
+            const isEditing = jsonInput.classList.contains('editing');
+            
+            if (isEditing) {
+                // Stop editing
+                jsonInput.classList.remove('editing');
+                jsonOutput.classList.remove('editing');
+                jsonInput.blur();
+                // Show actual content, not placeholder
+                const content = jsonOutput.dataset.json || '';
+                jsonOutput.innerHTML = content || '<div class="placeholder">Click to edit JSON...</div>';
+            } else {
+                // Start editing - populate JSON input with current JSON content
+                const currentJSON = jsonOutput.dataset.json || '';
+                jsonInput.value = currentJSON;
+                jsonInput.classList.add('editing');
+                jsonOutput.classList.add('editing');
+                // Focus without scrolling
+                jsonInput.focus({ preventScroll: true });
+            }
+        }
+
+        // Copy CSV content
+        function copyCSVContent() {
+            const csv = csvOutput.dataset.csv;
+            copyToClipboard(csv);
+        }
+
+        // Copy JSON content
+        function copyJSONContent() {
+            const json = jsonOutput.dataset.json;
+            copyToClipboard(json);
+        }
+
+        // Toggle HTML editing
+        function toggleHTMLEditing() {
+            const isEditing = htmlInput.classList.contains('editing');
+            
+            if (isEditing) {
+                // Stop editing
+                htmlInput.classList.remove('editing');
+                htmlOutput.classList.remove('editing');
+                htmlInput.blur();
+                // Refresh display to show beautified HTML
+                const currentHTML = htmlOutput.dataset.html || '';
+                updateHTMLDisplay(currentHTML);
+            } else {
+                // Start editing - populate HTML input with current HTML content
+                const currentHTML = htmlOutput.dataset.html || '';
+                htmlInput.value = currentHTML;
+                htmlInput.classList.add('editing');
+                htmlOutput.classList.add('editing');
+                // Refresh display to show raw HTML
+                updateHTMLDisplay(currentHTML);
+                // Focus without scrolling
+                htmlInput.focus({ preventScroll: true });
+            }
+        }
+
+        // Copy HTML content
+        function copyHTMLContent() {
+            const isEditing = htmlInput.classList.contains('editing');
+            if (isEditing) {
+                // Copy raw HTML when editing
+                const html = htmlOutput.dataset.html;
+                copyToClipboard(html);
+            } else {
+                // Copy beautified HTML when not editing
+                const beautifiedHTML = htmlOutput.textContent;
+                copyToClipboard(beautifiedHTML);
+            }
+        }
+
+        // Beautify HTML for display
+        function beautifyHTML(html) {
+            if (!html || !html.trim()) {
+                return '';
+            }
+            
+            // Simple HTML beautification
+            let beautified = html
+                .replace(/></g, '>\n<')  // Add newlines between tags
+                .replace(/^\s+|\s+$/g, '') // Trim
+                .split('\n')
+                .map(line => {
+                    // Add indentation based on tag depth
+                    const depth = (line.match(/<\//g) || []).length - (line.match(/<[^\/]/g) || []).length;
+                    const indent = '  '.repeat(Math.max(0, depth));
+                    return indent + line.trim();
+                })
+                .join('\n');
+            
+            return beautified;
+        }
+
+        // Update HTML output display
+        function updateHTMLDisplay(html) {
+            if (html && html.trim()) {
+                const isEditing = htmlInput.classList.contains('editing');
+                if (isEditing) {
+                    // Show raw HTML when editing
+                    htmlOutput.textContent = html;
+                } else {
+                    // Show beautified HTML when not editing
+                    htmlOutput.textContent = beautifyHTML(html);
+                }
+            } else {
+                htmlOutput.innerHTML = '<div class="placeholder">Click to edit HTML...</div>';
+            }
+            htmlOutput.dataset.html = html;
+        }
+
+        // Show copy indicator
+        function showCopyIndicator() {
+            copyIndicator.classList.add('show');
+            setTimeout(() => {
+                copyIndicator.classList.remove('show');
+            }, 1500);
+        }
+
+        // Clear button handler
+        function clearContent() {
+            markdownInput.value = '';
+            csvInput.value = '';
+            jsonInput.value = '';
+            htmlInput.value = '';
+            updateOutput();
+        }
+
+        // Help button handler
+        function showHelp() {
+            const helpModal = document.getElementById('help-modal');
+            helpModal.classList.add('show');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('help-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('show');
+            }
+        });
+
+        // Toggle card functionality
+        function toggleCard(header) {
+            const targetId = header.dataset.target;
+            const body = document.getElementById(targetId);
+            const toggleIcon = header.querySelector('.toggle-icon');
+            const card = header.closest('.card');
+            
+            if (body.classList.contains('collapsed')) {
+                body.classList.remove('collapsed');
+                card.classList.remove('collapsed');
+                toggleIcon.classList.remove('collapsed');
+            } else {
+                body.classList.add('collapsed');
+                card.classList.add('collapsed');
+                toggleIcon.classList.add('collapsed');
+            }
+            
+            // Update grid template based on collapsed state
+            updateGridLayout();
+        }
+        
+        // Update grid layout based on collapsed cards
+        function updateGridLayout() {
+            const content = document.querySelector('.content');
+            const cards = document.querySelectorAll('.card');
+            const collapsedCount = document.querySelectorAll('.card.collapsed').length;
+            const expandedCount = cards.length - collapsedCount;
+            
+            if (expandedCount === 0) {
+                // All collapsed - use auto for all rows
+                content.style.gridTemplateRows = 'auto auto auto auto auto';
+            } else if (collapsedCount === 0) {
+                // All expanded - use equal fractions
+                content.style.gridTemplateRows = '1fr 1fr 1fr 1fr 1fr';
+            } else {
+                // Mixed state - need to calculate which rows are collapsed
+                let templateRows = '';
+                cards.forEach((card, index) => {
+                    if (card.classList.contains('collapsed')) {
+                        templateRows += 'auto ';
+                    } else {
+                        templateRows += '1fr ';
+                    }
+                });
+                content.style.gridTemplateRows = templateRows.trim();
+            }
+        }
+
+        // Event listeners
+        markdownInput.addEventListener('input', updateOutput);
+        markdownDisplay.addEventListener('click', toggleMarkdownEditing);
+        csvOutput.addEventListener('click', toggleCSVEditing);
+        csvInput.addEventListener('input', updateFromCSV);
+        jsonOutput.addEventListener('click', toggleJSONEditing);
+        jsonInput.addEventListener('input', updateFromJSON);
+        htmlOutput.addEventListener('click', toggleHTMLEditing);
+        htmlInput.addEventListener('input', updateFromHTML);
+        
+        // Stop editing when clicking outside
+        markdownInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                markdownInput.classList.remove('editing');
+                markdownDisplay.classList.remove('editing');
+                // Show actual content, not placeholder
+                const content = markdownInput.value;
+                markdownDisplay.innerHTML = content || '<div class="placeholder">Click to edit markdown...</div>';
+            }, 100);
+        });
+        
+        csvInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                csvInput.classList.remove('editing');
+                csvOutput.classList.remove('editing');
+                // Show actual content, not placeholder
+                const content = csvOutput.dataset.csv || '';
+                csvOutput.innerHTML = content || '<div class="placeholder">Click to edit CSV...</div>';
+            }, 100);
+        });
+        
+        jsonInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                jsonInput.classList.remove('editing');
+                jsonOutput.classList.remove('editing');
+                // Show actual content, not placeholder
+                const content = jsonOutput.dataset.json || '';
+                jsonOutput.innerHTML = content || '<div class="placeholder">Click to edit JSON...</div>';
+            }, 100);
+        });
+        
+        htmlInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                htmlInput.classList.remove('editing');
+                htmlOutput.classList.remove('editing');
+                // Refresh display to show beautified HTML
+                const currentHTML = htmlOutput.dataset.html || '';
+                updateHTMLDisplay(currentHTML);
+            }, 100);
+        });
+        
+        document.getElementById('clear-btn').addEventListener('click', clearContent);
+        document.getElementById('help-btn').addEventListener('click', showHelp);
+        document.getElementById('copy-preview').addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyPreviewContent();
+        });
+        document.getElementById('copy-markdown').addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyMarkdownContent();
+        });
+        document.getElementById('copy-csv').addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyCSVContent();
+        });
+        document.getElementById('copy-json').addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyJSONContent();
+        });
+        document.getElementById('copy-html').addEventListener('click', (e) => {
+            e.stopPropagation();
+            copyHTMLContent();
+        });
+
+        // Card toggle listeners
+        document.querySelectorAll('.card-header').forEach(header => {
+            header.addEventListener('click', () => toggleCard(header));
+        });
+
+        // Initial render
+        updateOutput();
+        updateGridLayout();
+    </script>
+</body>
+</html>
