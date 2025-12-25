@@ -1,6 +1,6 @@
 # Table Multi-format Editor & Converter
 
-A powerful, responsive web application for creating, editing, and converting table data between multiple formats: **Markdown**, **CSV**, **JSON**, and **HTML**. Edit in any format and see all others update automatically in real-time.
+A responsive web application for creating, editing, and converting table data between multiple formats: **Markdown**, **CSV**, **JSON**, and **HTML**. Edit in any format and all others update automatically in real-time.
 
 ## 🚀 Features
 
